@@ -1,11 +1,12 @@
 name: isucon9-final bench
 on: [push]
 env:
-  LANGUAGE: go # CHANGEME
+  LANGUAGE: go  # CHANGEME
+  BENCH_TARGET_URL: http://127.0.0.1:8080
 jobs:
 
   build:
-    name: Build
+    name: Bench
     runs-on: ubuntu-latest
     steps:
 
@@ -29,12 +30,12 @@ jobs:
       run: |
         docker-compose -f webapp/docker-compose.yml -f webapp/docker-compose.${LANGUAGE}.yml up -d
         sleep 10
-        while ! curl -fs http://127.0.0.1:8080/api/stations >/dev/null ; do
+        while ! curl -fs ${BENCH_TARGET_URL}/api/stations >/dev/null ; do
           echo -n .
           sleep 1
         done
         echo
-        bench/bin/bench_linux run --target　http://127.0.0.1:8080 --assetdir webapp/frontend/dist | \
+        bench/bin/bench_linux run --target ${BENCH_TARGET_URL} --assetdir webapp/frontend/dist | \
           jq '{"body":tojson}' | \
           curl \
             --request POST \
