@@ -1,0 +1,43 @@
+name: isucon9-final bench
+on: [push]
+env:
+  LANGUAGE: go # CHANGEME
+jobs:
+
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    steps:
+
+    - name: Set up Go 1.13
+      uses: actions/setup-go@v1
+      with:
+        go-version: 1.13
+      id: go
+
+    - name: Check out code into the Go module directory
+      uses: actions/checkout@v1
+
+    - name: build dependency
+      run: |
+        (cd webapp/frontend && make)
+        (cd bench && make)
+        docker-compose -f webapp/docker-compose.yml -f webapp/docker-compose.${LANGUAGE}.yml build
+
+    - name: Run bench
+      timeout-minutes: 10
+      run: |
+        docker-compose -f webapp/docker-compose.yml -f webapp/docker-compose.${LANGUAGE}.yml up -d
+        sleep 10
+        while ! curl -s http://127.0.0.1:8080/api/stations >/dev/null ; do
+          echo -n .
+          sleep 10
+        done
+        echo
+        bench/bin/bench_linux run --target　http://127.0.0.1:8080 --assetdir webapp/frontend/dist | \
+          jq '{"body"":tojson}' | \
+          curl \
+            --request POST \
+            --url https://api.github.com/repos/${{ github.repository }}/commits/${{ github.sha }}/comments \
+            --header 'authorization: Bearer ${{ secrets.GITHUB_TOKEN }}' \
+            --header 'content-type: application/json'
