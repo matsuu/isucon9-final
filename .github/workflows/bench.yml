@@ -19,11 +19,42 @@ jobs:
     - name: Check out code into the Go module directory
       uses: actions/checkout@v1
 
+    - name: Cache go modules
+      uses: actions/cache@v1
+      with:
+        path: ~/go/pkg/mod
+        key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+        restore-keys: |
+          ${{ runner.os }}-go-
+
+    - name: Cache webapp/frontend
+      id: cache-webapp-frontend
+      uses: actions/cache@v1
+      with:
+        path: webapp/frontend/dist
+        key: ${{ runner.os }}-webapp-frontend-${{ hashFiles('webapp/frontend/**') }}
+        restore-keys: |
+          ${{ runner.os }}-webapp-frontend-
+
+    - name: Build webapp/frontend
+      if: steps.cache-webapp-frontend.outputs.cache-hit != 'true'
+      run: cd webapp/frontend && make
+
+    - name: Cache bench
+      id: cache-bench
+      uses: actions/cache@v1
+      with:
+        path: bench/bin
+        key: ${{ runner.os }}-bench-${{ hashFiles('bench/**/*.go') }}
+        restore-keys: |
+          ${{ runner.os }}-bench-
+
+    - name: Build bench
+      if: steps.cache-bench.outputs.cache-hit != 'true'
+      run: cd bench && make
+
     - name: Build dependency
-      run: |
-        (cd webapp/frontend && make)
-        (cd bench && make)
-        docker-compose -f webapp/docker-compose.yml -f webapp/docker-compose.${LANGUAGE}.yml build
+      run: docker-compose -f webapp/docker-compose.yml -f webapp/docker-compose.${LANGUAGE}.yml build
 
     - name: Run bench
       timeout-minutes: 10
