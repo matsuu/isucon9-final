@@ -32,9 +32,7 @@ jobs:
       uses: actions/cache@v1
       with:
         path: webapp/frontend/dist
-        key: ${{ runner.os }}-webapp-frontend-${{ hashFiles('webapp/frontend/src/**/*.*') }}
-        restore-keys: |
-          ${{ runner.os }}-webapp-frontend-
+        key: ${{ runner.os }}-webapp-frontend
 
     - name: Build webapp/frontend
       if: steps.cache-webapp-frontend.outputs.cache-hit != 'true'
@@ -45,9 +43,7 @@ jobs:
       uses: actions/cache@v1
       with:
         path: bench/bin
-        key: ${{ runner.os }}-bench-${{ hashFiles('bench/**/*.go') }}
-        restore-keys: |
-          ${{ runner.os }}-bench-
+        key: ${{ runner.os }}-bench
 
     - name: Build bench
       if: steps.cache-bench.outputs.cache-hit != 'true'
